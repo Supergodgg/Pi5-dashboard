@@ -1,0 +1,12 @@
+# Dashboard runtime files
+/tmp/dashboard-*.js
+/tmp/dashboard-*.log
+/tmp/world-news-dashboard-cache.json
+
+# Python
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,1588 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Device Monitor — 设备监控面板</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="file:///tmp/dashboard-comm.js"></script>
+<script src="file:///tmp/dashboard-thinking.js"></script>
+<script src="file:///tmp/liepin-dashboard.js"></script>
+<script src="file:///tmp/world-news-dashboard.js"></script>
+<style>
+/* ============================================
+   CSS Variables — Light Theme Token Map
+   ============================================ */
+:root {
+  /* Surface */
+  --bg-root:        #F2F2F7;
+  --bg-card:        rgba(255,255,255,0.72);
+  --bg-card-solid:  #FFFFFF;
+  --bg-glass:       rgba(255,255,255,0.55);
+  --bg-glass-heavy: rgba(255,255,255,0.78);
+  --bg-toolbar:     rgba(255,255,255,0.64);
+  --bg-input:       rgba(242,242,247,0.70);
+
+  /* Border */
+  --border-subtle:  rgba(0,0,0,0.06);
+  --border-card:    rgba(0,0,0,0.08);
+  --border-soft:    rgba(0,0,0,0.05);
+
+  /* Text */
+  --text-primary:   #1D1D1F;
+  --text-secondary: #6E6E73;
+  --text-tertiary:  #AEAEB2;
+  --text-inverse:   #FFFFFF;
+
+  /* Accent */
+  --accent:         #007AFF;
+  --accent-soft:    #E8F2FF;
+  --accent-hover:   #0062CC;
+  --green:          #34C759;
+  --green-soft:     #E8F8EC;
+  --orange:         #FF9500;
+  --orange-soft:    #FFF4E5;
+  --red:            #FF3B30;
+  --red-soft:       #FFEBEA;
+  --purple:         #AF52DE;
+  --teal:           #5AC8FA;
+
+  /* Glass */
+  --glass-blur:     18px;
+  --glass-sat:      180%;
+  --glass-border:   rgba(255,255,255,0.6);
+
+  /* Shadow */
+  --shadow-xs:      0 1px 2px rgba(0,0,0,0.04);
+  --shadow-sm:      0 2px 8px rgba(0,0,0,0.06);
+  --shadow-md:      0 8px 24px rgba(0,0,0,0.08);
+  --shadow-lg:      0 16px 48px rgba(0,0,0,0.10);
+  --shadow-glow:    0 0 0 3px rgba(0,122,255,0.12);
+
+  /* Radius */
+  --radius-sm:      10px;
+  --radius-md:      16px;
+  --radius-lg:      22px;
+  --radius-xl:      28px;
+
+  /* Spacing — compact for small display */
+  --space-xs:       4px;
+  --space-sm:       8px;
+  --space-md:       12px;
+  --space-lg:       16px;
+  --space-xl:       22px;
+
+  /* Typography */
+  --font:           'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+  --font-mono:      'SF Mono', 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* ============================================
+   Reset & Base — Fullscreen Kiosk Optimized
+   ============================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  width: 100%; height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg-root);
+  color: var(--text-primary);
+  line-height: 1.45;
+  width: 100vw; height: 100vh;
+  margin: 0; padding: 0;
+  overflow: hidden;
+  display: flex;
+}
+
+/* Subtle background texture */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(0,122,255,0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 90% 100%, rgba(175,82,222,0.03) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.app-shell {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* ============================================
+   Header — Glass Toolbar
+   ============================================ */
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md) var(--space-lg);
+  margin-bottom: var(--space-lg);
+  background: var(--bg-toolbar);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  width: 100%;
+}
+.news-kicker {
+  font-size: 0.72rem;
+  color: var(--accent);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.news-headline {
+  font-size: 1.12rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.25;
+}
+.news-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(5, auto);
+  grid-auto-flow: column;
+  gap: 6px;
+}
+.news-item {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 7px;
+  align-items: start;
+  font-size: 0.76rem;
+  line-height: 1.35;
+  color: var(--text-secondary);
+  padding: 7px 9px;
+  border-radius: 10px;
+  background: var(--bg-input);
+  min-width: 0;
+}
+.news-rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.66rem;
+  font-weight: 800;
+  font-family: var(--font-mono);
+}
+
+.worldcup-section {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  margin-bottom: var(--space-lg);
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-glass);
+  border: 1px solid var(--border-subtle);
+}
+.worldcup-title {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+.match-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-width: max-content;
+  padding: 7px 8px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.5);
+}
+.match-teams {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.match-meta {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  text-align: left;
+}
+.match-ticker {
+  overflow: hidden;
+  min-width: 0;
+}
+.match-track {
+  display: flex;
+  gap: 14px;
+  width: max-content;
+  animation: match-scroll 24s linear infinite;
+}
+.match-ticker:hover .match-track { animation-play-state: paused; }
+
+@keyframes match-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.status-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px rgba(52,199,89,0.5);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+
+.header-time {
+  font-size: 0.82rem; font-weight: 500; color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================
+   Grid Layout
+   ============================================ */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: auto;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+/* Region assignments */
+.stat-cards      { grid-column: span 4; display: grid; grid-template-columns: repeat(4,1fr); gap: var(--space-md); }
+.cpu-panel       { grid-column: span 2; }
+.memory-panel    { grid-column: span 2; }
+.disk-panel      { grid-column: span 2; }
+.network-panel   { grid-column: span 2; }
+.process-panel   { grid-column: span 4; }
+.liepin-panel    { grid-column: span 4; }
+.comm-panel     { grid-column: span 4; }
+.sysinfo-panel   { grid-column: span 2; }
+.temp-panel      { grid-column: span 2; }
+/* ============================================
+   Communication Log
+   ============================================ */
+.comm-log {
+  display: flex; flex-direction: column; gap: 10px;
+  position: relative; z-index: 1;
+  max-height: 420px; overflow-y: auto;
+}
+.comm-entry {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 12px 14px; border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  transition: background 0.2s;
+}
+.comm-entry:hover { background: var(--bg-glass); }
+.comm-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; flex-shrink: 0;
+  color: white; font-weight: 600;
+}
+.comm-avatar.weixin   { background: linear-gradient(135deg, #07C160, #06AD56); }
+.comm-avatar.telegram { background: linear-gradient(135deg, #2AABEE, #229ED9); }
+.comm-avatar.qq       { background: linear-gradient(135deg, #12B7F5, #0D9ED9); }
+.comm-avatar.hermes   { background: linear-gradient(135deg, #6366F1, #818CF8); }
+.comm-body { flex: 1; min-width: 0; }
+.comm-meta {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 3px;
+}
+.comm-platform { font-size: 0.7rem; font-weight: 600; color: var(--text-secondary); }
+.comm-time     { font-size: 0.65rem; color: var(--text-tertiary); font-family: var(--font-mono); }
+.comm-text {
+  font-size: 0.76rem; color: var(--text-primary); line-height: 1.45;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.comm-thinking {
+  font-size: 0.68rem; color: var(--purple);
+  margin-top: 4px; padding: 6px 10px;
+  border-radius: 8px; background: rgba(175,82,222,0.06);
+  display: flex; align-items: flex-start; gap: 5px;
+  line-height: 1.4;
+}
+.comm-thinking::before { content: '🧠'; font-style: normal; flex-shrink: 0; margin-top: 1px; }
+.comm-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+  margin-top: 7px;
+}
+.comm-dot.user   { background: var(--accent); }
+.comm-dot.agent  { background: var(--purple); }
+
+/* ============================================
+   Liepin Automation
+   ============================================ */
+.automation-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-md);
+  position: relative;
+  z-index: 1;
+}
+.automation-metric {
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  min-width: 0;
+}
+.automation-label {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.automation-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.automation-sub {
+  font-size: 0.68rem;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.automation-log {
+  grid-column: span 4;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  min-height: 46px;
+  word-break: break-word;
+}
+.automation-command {
+  grid-column: span 4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(0,122,255,0.08);
+}
+.automation-command code {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--accent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.automation-controls {
+  grid-column: span 4;
+  display: grid;
+  grid-template-columns: 110px 1fr 1fr 130px 120px 1fr 1fr;
+  gap: var(--space-sm);
+}
+.automation-input {
+  min-width: 0;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card-solid);
+  color: var(--text-primary);
+  font: 700 0.9rem var(--font-mono);
+  padding: 10px 12px;
+  outline: none;
+}
+.automation-button {
+  border: 0;
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-weight: 700;
+  color: var(--text-inverse);
+  cursor: pointer;
+}
+.automation-button.start { background: var(--green); }
+.automation-button.stop  { background: var(--red); }
+.automation-button.schedule { background: var(--accent); }
+.automation-button.cancel { background: var(--orange); }
+.automation-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.automation-days {
+  grid-column: span 7;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.automation-day {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+.automation-day input { accent-color: var(--accent); }
+
+/* ============================================
+   Equal-height cards in same row (grid stretch) */
+.dashboard-grid { align-items: stretch; }
+.dashboard-grid > * { display: flex; }
+.dashboard-grid > * > .card { flex: 1; }
+
+/* ============================================
+   Glass Card Component
+   ============================================ */
+.card {
+  background: var(--bg-card);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.3s ease, transform 0.2s ease, background 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.05) 50%, transparent 100%);
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+  background: var(--bg-glass-heavy);
+}
+
+.card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: var(--space-md);
+  position: relative; z-index: 1;
+}
+
+.card-title {
+  font-size: 0.78rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--text-secondary);
+}
+
+.card-badge {
+  font-size: 0.7rem; font-weight: 500; padding: 3px 10px;
+  border-radius: 20px;
+  background: var(--accent-soft); color: var(--accent);
+}
+
+/* ============================================
+   Stat Cards (top row)
+   ============================================ */
+.stat-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md) var(--space-lg);
+  box-shadow: var(--shadow-xs);
+  display: flex; align-items: center; gap: var(--space-md);
+  transition: all 0.3s ease;
+  position: relative; overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255,255,255,0.35) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.stat-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.stat-icon {
+  width: 44px; height: 44px; border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; flex-shrink: 0;
+  position: relative; z-index: 1;
+}
+
+.stat-icon.cpu  { background: var(--accent-soft); color: var(--accent); }
+.stat-icon.mem  { background: var(--purple); color: white; background: linear-gradient(135deg, #AF52DE, #5856D6); }
+.stat-icon.disk { background: var(--teal); color: white; background: linear-gradient(135deg, #5AC8FA, #007AFF); }
+.stat-icon.net  { background: var(--green-soft); color: var(--green); }
+
+.stat-info { position: relative; z-index: 1; min-width: 0; }
+.stat-label { font-size: 0.72rem; color: var(--text-secondary); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+.stat-value { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
+.stat-sub   { font-size: 0.7rem; color: var(--text-tertiary); margin-top: 2px; }
+
+/* ============================================
+   Ring Gauge
+   ============================================ */
+.gauge-wrap {
+  display: flex; align-items: center; gap: var(--space-lg);
+  position: relative; z-index: 1;
+}
+
+.gauge-ring {
+  position: relative;
+  width: 100px; height: 100px;
+  flex-shrink: 0;
+}
+
+.gauge-ring svg { width: 100px; height: 100px; transform: rotate(-90deg); }
+.gauge-bg { fill: none; stroke: rgba(0,0,0,0.06); stroke-width: 7; }
+.gauge-fill { fill: none; stroke-width: 7; stroke-linecap: round; transition: stroke-dashoffset 0.6s ease; }
+.gauge-center {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.gauge-pct { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.03em; }
+.gauge-unit { font-size: 0.62rem; color: var(--text-tertiary); font-weight: 500; }
+
+.gauge-details { flex: 1; min-width: 0; }
+.gauge-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 0; border-bottom: 1px solid var(--border-soft);
+}
+.gauge-row:last-child { border-bottom: none; }
+.gauge-key { font-size: 0.78rem; color: var(--text-secondary); }
+.gauge-val { font-size: 0.82rem; font-weight: 600; font-family: var(--font-mono); }
+
+/* ============================================
+   Progress Bars
+   ============================================ */
+.bar-group { display: flex; flex-direction: column; gap: var(--space-sm); position: relative; z-index: 1; }
+.bar-item { display: flex; flex-direction: column; gap: 4px; }
+.bar-label-row { display: flex; justify-content: space-between; font-size: 0.76rem; }
+.bar-name { color: var(--text-secondary); font-weight: 500; }
+.bar-value { font-weight: 600; font-family: var(--font-mono); font-size: 0.74rem; }
+.bar-track {
+  height: 6px; border-radius: 3px; background: rgba(0,0,0,0.06);
+  overflow: hidden;
+}
+.bar-fill {
+  height: 100%; border-radius: inherit; transition: width 0.6s ease;
+}
+.bar-fill.accent { background: var(--accent); }
+.bar-fill.purple { background: linear-gradient(90deg, #AF52DE, #5856D6); }
+.bar-fill.green  { background: var(--green); }
+.bar-fill.orange { background: var(--orange); }
+
+/* ============================================
+   Network Chart
+   ============================================ */
+.net-stats { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md); position: relative; z-index: 1; }
+.net-item {
+  padding: var(--space-sm); border-radius: var(--radius-sm);
+  background: var(--bg-input);
+}
+.net-label { font-size: 0.7rem; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.04em; }
+.net-value { font-size: 1.1rem; font-weight: 700; font-family: var(--font-mono); }
+.net-unit  { font-size: 0.7rem; color: var(--text-tertiary); font-weight: 400; }
+
+.net-sparkline {
+  margin-top: var(--space-md);
+  height: 60px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  position: relative; overflow: hidden;
+}
+
+/* ============================================
+   Process Table
+   ============================================ */
+.process-table {
+  width: 100%; border-collapse: collapse;
+  position: relative; z-index: 1;
+}
+.process-table th {
+  text-align: left; font-size: 0.7rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--text-tertiary); padding: 8px 12px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.process-table td {
+  font-size: 0.82rem; padding: 10px 12px;
+  border-bottom: 1px solid var(--border-soft);
+  font-weight: 400;
+}
+.process-table tr:hover td { background: rgba(0,122,255,0.03); }
+.process-name { font-weight: 500; }
+.process-pid { font-family: var(--font-mono); font-size: 0.76rem; color: var(--text-tertiary); }
+.process-cpu { font-family: var(--font-mono); font-weight: 600; }
+.process-mem { font-family: var(--font-mono); color: var(--text-secondary); }
+
+/* ============================================
+   System Info
+   ============================================ */
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; position: relative; z-index: 1; }
+.info-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 14px; border-radius: var(--radius-sm);
+  background: var(--bg-input);
+}
+.info-key { font-size: 0.76rem; color: var(--text-secondary); font-weight: 500; }
+.info-val { font-size: 0.8rem; font-weight: 600; font-family: var(--font-mono); }
+
+/* ============================================
+   Temperature
+   ============================================ */
+.temp-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: var(--space-sm); position: relative; z-index: 1; }
+.temp-item {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: var(--space-md); border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  transition: all 0.3s ease;
+}
+.temp-item:hover { background: var(--bg-glass); }
+.temp-value { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; font-family: var(--font-mono); }
+.temp-label { font-size: 0.7rem; color: var(--text-tertiary); font-weight: 500; text-transform: uppercase; }
+.temp-indicator { width: 6px; height: 6px; border-radius: 50%; }
+.temp-indicator.cool { background: var(--green); }
+.temp-indicator.warm { background: var(--orange); }
+.temp-indicator.hot  { background: var(--red); }
+
+/* ============================================
+   Footer
+   ============================================ */
+.footer {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: var(--space-md) var(--space-lg);
+  background: var(--bg-toolbar);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  font-size: 0.72rem; color: var(--text-tertiary);
+}
+
+.footer-dots { display: flex; gap: 6px; }
+.footer-dot { width: 7px; height: 7px; border-radius: 50%; }
+.footer-dot:nth-child(1) { background: var(--red); }
+.footer-dot:nth-child(2) { background: var(--orange); }
+.footer-dot:nth-child(3) { background: var(--green); }
+
+/* ============================================
+   Animations
+   ============================================ */
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.card, .stat-card { animation: fade-in-up 0.5s ease both; }
+.stat-card:nth-child(2) { animation-delay: 0.05s; }
+.stat-card:nth-child(3) { animation-delay: 0.10s; }
+.stat-card:nth-child(4) { animation-delay: 0.15s; }
+
+/* ============================================
+   Responsive
+   ============================================ */
+@media (max-width: 1024px) {
+  .stat-cards { grid-template-columns: repeat(2, 1fr); }
+  .sysinfo-panel, .temp-panel { grid-column: span 4; }
+  /* CPU/Memory and Disk/Network stay side-by-side on small screens */
+  .cpu-panel, .memory-panel { grid-column: span 2; }
+  .disk-panel, .network-panel { grid-column: span 2; }
+}
+
+@media (max-width: 640px) {
+  .app-shell { padding: var(--space-sm); }
+  .header { flex-direction: column; align-items: flex-start; gap: var(--space-sm); }
+  .worldcup-section { min-width: 0; width: 100%; }
+  .news-list { grid-template-columns: 1fr; grid-template-rows: none; grid-auto-flow: row; }
+  .worldcup-section { grid-template-columns: 1fr; }
+  .stat-cards { grid-template-columns: 1fr; }
+  .net-stats { grid-template-columns: 1fr; }
+  .info-grid { grid-template-columns: 1fr; }
+  .temp-grid { grid-template-columns: 1fr; }
+  .automation-grid { grid-template-columns: repeat(2, 1fr); }
+  .automation-log, .automation-command { grid-column: span 2; }
+  .automation-controls { grid-column: span 2; grid-template-columns: 1fr; }
+  .automation-days { grid-column: span 1; }
+  .gauge-wrap { flex-direction: column; align-items: center; }
+  /* CPU + Memory stay side-by-side even on tiny screens */
+  .cpu-panel, .memory-panel { grid-column: span 1 !important; }
+}
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- ===== HEADER ===== -->
+  <header class="header">
+    <div class="header-left">
+      <div class="news-kicker">实时新闻 · 中国热点</div>
+      <div class="news-headline">中国实时热点 Top 10</div>
+      <div class="news-list" id="worldNewsList">
+        <div class="news-item"><span class="news-rank">1</span><span>世界杯 16 强继续进行，巴西、英格兰与墨西哥成为今日焦点。</span></div>
+        <div class="news-item"><span class="news-rank">2</span><span>欧洲热浪持续，多国讨论城市降温、医疗与能源韧性。</span></div>
+        <div class="news-item"><span class="news-rank">3</span><span>美国 250 周年庆典进入高峰，历史叙事与政治分歧受关注。</span></div>
+        <div class="news-item"><span class="news-rank">4</span><span>中东紧张局势延续，伊朗高规格葬礼与地区安全成为焦点。</span></div>
+        <div class="news-item"><span class="news-rank">5</span><span>无人机与反无人机能力成为欧洲防务讨论核心。</span></div>
+        <div class="news-item"><span class="news-rank">6</span><span>北美高温影响大型活动，世界杯赛程与公共安全面临压力。</span></div>
+        <div class="news-item"><span class="news-rank">7</span><span>法国、摩洛哥率先晋级，世界杯八强席位逐步明朗。</span></div>
+        <div class="news-item"><span class="news-rank">8</span><span>FIFA 撤销 Balogun 红牌，美国队淘汰赛阵容压力缓解。</span></div>
+        <div class="news-item"><span class="news-rank">9</span><span>全球市场继续关注美国政策、能源价格与科技投资走向。</span></div>
+        <div class="news-item"><span class="news-rank">10</span><span>国际媒体加码美国报道，围绕大选周期与周年庆扩大布局。</span></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== WORLD CUP ===== -->
+  <section class="worldcup-section">
+    <div class="worldcup-title">
+      <span>今日世界杯</span>
+      <span class="header-time" id="headerTime">--</span>
+    </div>
+    <div class="match-ticker">
+      <div class="match-track">
+        <div class="match-row">
+          <span class="match-teams">巴西 vs 挪威</span>
+          <span class="match-meta">22:00 CEST · MetLife</span>
+        </div>
+        <div class="match-row">
+          <span class="match-teams">墨西哥 vs 英格兰</span>
+          <span class="match-meta">02:00 CEST · Azteca</span>
+        </div>
+        <div class="match-row">
+          <span class="match-teams">巴西 vs 挪威</span>
+          <span class="match-meta">22:00 CEST · MetLife</span>
+        </div>
+        <div class="match-row">
+          <span class="match-teams">墨西哥 vs 英格兰</span>
+          <span class="match-meta">02:00 CEST · Azteca</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== STAT CARDS ===== -->
+  <div class="dashboard-grid">
+    <div class="stat-cards">
+      <div class="stat-card">
+        <div class="stat-icon cpu">⬡</div>
+        <div class="stat-info">
+          <div class="stat-label">CPU 使用率</div>
+          <div class="stat-value" id="statCpu">--</div>
+          <div class="stat-sub">4 核心 · Cortex-A76</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon mem">◈</div>
+        <div class="stat-info">
+          <div class="stat-label">内存</div>
+          <div class="stat-value" id="statMem">--</div>
+          <div class="stat-sub">8 GB LPDDR4X</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon disk">◎</div>
+        <div class="stat-info">
+          <div class="stat-label">磁盘</div>
+          <div class="stat-value" id="statDisk">--</div>
+          <div class="stat-sub" id="statDiskSub">--</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon net">↕</div>
+        <div class="stat-info">
+          <div class="stat-label">网络吞吐</div>
+          <div class="stat-value" id="statNet">--</div>
+          <div class="stat-sub" id="statNetSub">--</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== CPU + MEMORY ===== -->
+  <div class="dashboard-grid">
+    <div class="cpu-panel">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">处理器</span>
+          <span class="card-badge" id="cpuBadge">正常</span>
+        </div>
+        <div class="gauge-wrap">
+          <div class="gauge-ring">
+            <svg width="100" height="100" viewBox="0 0 100 100">
+              <circle class="gauge-bg" cx="50" cy="50" r="43"/>
+              <circle class="gauge-fill" id="cpuRing" cx="50" cy="50" r="43"
+                stroke="url(#cpuGrad)" stroke-dasharray="270.18" stroke-dashoffset="270.18"/>
+              <defs>
+                <linearGradient id="cpuGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#007AFF"/>
+                  <stop offset="100%" stop-color="#5856D6"/>
+                </linearGradient>
+              </defs>
+            </svg>
+            <div class="gauge-center">
+              <span class="gauge-pct" id="cpuPct">0</span>
+              <span class="gauge-unit">%</span>
+            </div>
+          </div>
+          <div class="gauge-details">
+            <div class="gauge-row"><span class="gauge-key">频率</span><span class="gauge-val" id="cpuFreq">2.4 GHz</span></div>
+            <div class="gauge-row"><span class="gauge-key">核心</span><span class="gauge-val">4 / 4</span></div>
+            <div class="gauge-row"><span class="gauge-key">温度</span><span class="gauge-val" id="cpuTemp">48°C</span></div>
+            <div class="gauge-row"><span class="gauge-key">负载</span><span class="gauge-val" id="cpuLoad">0.00</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="memory-panel">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">内存</span>
+          <span class="card-badge">8 GB</span>
+        </div>
+        <div class="gauge-wrap">
+          <div class="gauge-ring">
+            <svg width="100" height="100" viewBox="0 0 100 100">
+              <circle class="gauge-bg" cx="50" cy="50" r="43"/>
+              <circle class="gauge-fill" id="memRing" cx="50" cy="50" r="43"
+                stroke="url(#memGrad)" stroke-dasharray="270.18" stroke-dashoffset="270.18"/>
+              <defs>
+                <linearGradient id="memGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#AF52DE"/>
+                  <stop offset="100%" stop-color="#5856D6"/>
+                </linearGradient>
+              </defs>
+            </svg>
+            <div class="gauge-center">
+              <span class="gauge-pct" id="memPct">0</span>
+              <span class="gauge-unit">%</span>
+            </div>
+          </div>
+          <div class="gauge-details">
+            <div class="gauge-row"><span class="gauge-key">已用</span><span class="gauge-val" id="memUsed">--</span></div>
+            <div class="gauge-row"><span class="gauge-key">可用</span><span class="gauge-val" id="memAvail">--</span></div>
+            <div class="gauge-row"><span class="gauge-key">缓存</span><span class="gauge-val" id="memCache">--</span></div>
+            <div class="gauge-row"><span class="gauge-key">交换</span><span class="gauge-val" id="memSwap">--</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DISK + NETWORK ===== -->
+  <div class="dashboard-grid">
+    <div class="disk-panel">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">磁盘</span>
+          <span class="card-badge" id="diskBadge">正常</span>
+        </div>
+        <div class="bar-group" id="diskBars">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <div class="network-panel">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">网络</span>
+          <span class="card-badge">wlan0</span>
+        </div>
+        <div class="net-stats">
+          <div class="net-item">
+            <span class="net-label">↓ 下载</span>
+            <span class="net-value"><span id="netDown">--</span> <span class="net-unit">KB/s</span></span>
+          </div>
+          <div class="net-item">
+            <span class="net-label">↑ 上传</span>
+            <span class="net-value"><span id="netUp">--</span> <span class="net-unit">KB/s</span></span>
+          </div>
+          <div class="net-item">
+            <span class="net-label">已接收</span>
+            <span class="net-value"><span id="netRxTotal">--</span> <span class="net-unit">GB</span></span>
+          </div>
+          <div class="net-item">
+            <span class="net-label">已发送</span>
+            <span class="net-value"><span id="netTxTotal">--</span> <span class="net-unit">GB</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PROCESSES ===== -->
+  <div class="dashboard-grid">
+    <div class="process-panel">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">进程 · TOP 8</span>
+          <span class="card-badge" id="procCount">-- 进程</span>
+        </div>
+        <div style="overflow-x:auto;position:relative;z-index:1;">
+          <table class="process-table">
+            <thead>
+              <tr><th>进程</th><th>PID</th><th>CPU %</th><th>内存 %</th><th>用户</th></tr>
+            </thead>
+            <tbody id="processBody">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== LIEPIN AUTOMATION ===== -->
+  <div class="dashboard-grid">
+    <div class="liepin-panel">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">猎聘自动投递</span>
+          <span class="card-badge" id="liepinStatus">未运行</span>
+        </div>
+        <div class="automation-grid">
+          <div class="automation-metric">
+            <div class="automation-label">目标</div>
+            <div class="automation-value" id="liepinTarget">--</div>
+            <div class="automation-sub">本次计划处理</div>
+          </div>
+          <div class="automation-metric">
+            <div class="automation-label">已处理</div>
+            <div class="automation-value" id="liepinProcessed">--</div>
+            <div class="automation-sub" id="liepinCollected">已采集 --</div>
+          </div>
+          <div class="automation-metric">
+            <div class="automation-label">成功</div>
+            <div class="automation-value" id="liepinSuccess">--</div>
+            <div class="automation-sub">已点击立即投递</div>
+          </div>
+          <div class="automation-metric">
+            <div class="automation-label">失败 / 跳过</div>
+            <div class="automation-value" id="liepinFailed">--</div>
+            <div class="automation-sub" id="liepinSkipped">跳过 --</div>
+          </div>
+          <div class="automation-log" id="liepinLog">等待投递状态…</div>
+          <div class="automation-controls">
+            <input class="automation-input" id="liepinLimitInput" type="number" min="1" step="1" value="30" aria-label="投递数量">
+            <button class="automation-button start" id="liepinStartButton" type="button">启动投递</button>
+            <button class="automation-button stop" id="liepinStopButton" type="button">停止脚本</button>
+            <select class="automation-input" id="liepinScheduleMode" aria-label="定时规则">
+              <option value="daily">每天</option>
+              <option value="workdays">工作日</option>
+              <option value="weekend">周末</option>
+              <option value="custom">自选周几</option>
+            </select>
+            <input class="automation-input" id="liepinScheduleTime" type="time" value="09:00" aria-label="定时启动时间">
+            <button class="automation-button schedule" id="liepinScheduleButton" type="button">定时启动</button>
+            <button class="automation-button cancel" id="liepinCancelScheduleButton" type="button">取消定时</button>
+            <div class="automation-days" id="liepinScheduleDays">
+              <label class="automation-day"><input type="checkbox" value="0" checked>周一</label>
+              <label class="automation-day"><input type="checkbox" value="1" checked>周二</label>
+              <label class="automation-day"><input type="checkbox" value="2" checked>周三</label>
+              <label class="automation-day"><input type="checkbox" value="3" checked>周四</label>
+              <label class="automation-day"><input type="checkbox" value="4" checked>周五</label>
+              <label class="automation-day"><input type="checkbox" value="5">周六</label>
+              <label class="automation-day"><input type="checkbox" value="6">周日</label>
+            </div>
+          </div>
+          <div class="automation-command">
+            <code>/shell /home/pi/lp 30</code>
+            <span class="automation-sub" id="liepinUpdated">--</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== COMMUNICATION LOG ===== -->
+  <div class="dashboard-grid">
+    <div class="comm-panel">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">💬 沟通记录</span>
+          <span class="card-badge" id="commCount">-- 条</span>
+        </div>
+        <div class="comm-log" id="commLog">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SYSTEM INFO + TEMPERATURE ===== -->
+  <div class="dashboard-grid">
+    <div class="sysinfo-panel">
+      <div class="card">
+        <div class="card-header"><span class="card-title">系统信息</span></div>
+        <div class="info-grid" id="sysInfo">
+          <div class="info-item"><span class="info-key">主机名</span><span class="info-val">raspberrypi</span></div>
+          <div class="info-item"><span class="info-key">系统</span><span class="info-val">Raspberry Pi OS</span></div>
+          <div class="info-item"><span class="info-key">内核</span><span class="info-val" id="sysKernel">--</span></div>
+          <div class="info-item"><span class="info-key">架构</span><span class="info-val">aarch64</span></div>
+          <div class="info-item"><span class="info-key">运行时间</span><span class="info-val" id="sysUptime">--</span></div>
+          <div class="info-item"><span class="info-key">进程数</span><span class="info-val" id="sysProcs">--</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="temp-panel">
+      <div class="card">
+        <div class="card-header"><span class="card-title">温度传感器</span></div>
+        <div class="temp-grid" id="tempGrid">
+          <div class="temp-item">
+            <span class="temp-label">CPU</span>
+            <span class="temp-value" id="tempCpu">--°C</span>
+            <span class="temp-indicator warm"></span>
+          </div>
+          <div class="temp-item">
+            <span class="temp-label">GPU</span>
+            <span class="temp-value" id="tempGpu">--°C</span>
+            <span class="temp-indicator cool"></span>
+          </div>
+          <div class="temp-item">
+            <span class="temp-label">PMIC</span>
+            <span class="temp-value" id="tempPmic">--°C</span>
+            <span class="temp-indicator cool"></span>
+          </div>
+          <div class="temp-item">
+            <span class="temp-label">环境</span>
+            <span class="temp-value" id="tempAmbient">--°C</span>
+            <span class="temp-indicator cool"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== FOOTER ===== -->
+  <div class="footer">
+    <div class="footer-dots">
+      <span class="footer-dot"></span><span class="footer-dot"></span><span class="footer-dot"></span>
+    </div>
+    <span>Device Monitor v1.0 · 自动刷新 2s</span>
+    <span id="footerTime">--</span>
+  </div>
+
+</div><!-- /app-shell -->
+
+<!-- ============================================
+     JAVASCRIPT — Data Engine
+     ============================================ -->
+<script>
+(function() {
+  'use strict';
+
+  // ── Helpers ──────────────────────────────────
+  const $ = (s) => document.querySelector(s);
+  const setText = (id, text) => { const el = $(id); if (el) el.textContent = text; };
+  const CIRCUMFERENCE = 2 * Math.PI * 43; // ~270.18
+
+  function setRing(id, pct) {
+    const el = $(id);
+    if (!el) return;
+    const offset = CIRCUMFERENCE * (1 - Math.min(pct, 100) / 100);
+    el.setAttribute('stroke-dashoffset', offset);
+  }
+
+  function fmtBytes(bytes) {
+    if (bytes >= 1e12) return (bytes/1e12).toFixed(1) + ' TB';
+    if (bytes >= 1e9)  return (bytes/1e9).toFixed(1)  + ' GB';
+    if (bytes >= 1e6)  return (bytes/1e6).toFixed(1)  + ' MB';
+    if (bytes >= 1e3)  return (bytes/1e3).toFixed(1)  + ' KB';
+    return bytes + ' B';
+  }
+
+  function fmtUptime(secs) {
+    const d = Math.floor(secs/86400);
+    const h = Math.floor((secs%86400)/3600);
+    const m = Math.floor((secs%3600)/60);
+    if (d > 0) return `${d}d ${h}h ${m}m`;
+    if (h > 0) return `${h}h ${m}m`;
+    return `${m}m`;
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+    }[char]));
+  }
+
+  // ── Simulated Data ────────────────────────────
+  function getSimulatedData() {
+    const cpuPct   = 15 + Math.random() * 25;
+    const memTotal = 8 * 1024; // MB
+    const memUsed  = 1800 + Math.random() * 800;
+    const memCache = 400 + Math.random() * 300;
+    const memAvail = memTotal - memUsed;
+    const memSwap  = 50 + Math.random() * 60;
+    const memPct   = (memUsed / memTotal) * 100;
+
+    const diskTotal = 64 * 1024; // MB (64 GB SD card)
+    const diskUsed  = 28000 + Math.random() * 500;
+    const diskPct   = (diskUsed / diskTotal) * 100;
+
+    const netDown   = 120 + Math.random() * 350;
+    const netUp     = 40 + Math.random() * 120;
+    const netRx     = 12.4 + Math.random() * 0.1;
+    const netTx     = 3.8 + Math.random() * 0.05;
+
+    const cpuFreq  = (2.0 + Math.random() * 0.4).toFixed(1);
+    const cpuLoad  = (0.3 + Math.random() * 1.2).toFixed(2);
+    const cpuTemp  = 45 + Math.random() * 12;
+    const gpuTemp  = 38 + Math.random() * 8;
+    const pmicTemp = 40 + Math.random() * 5;
+    const ambient  = 26 + Math.random() * 2;
+
+    const uptime = 3600 * 72 + Math.floor(Math.random() * 3600);
+
+    const procs = [
+      { name:'hermes-agent', pid:1842, cpu:4.2+Math.random()*8,  mem:3.1+Math.random()*2,  user:'pi' },
+      { name:'chromium',     pid:1203, cpu:2.1+Math.random()*5,  mem:5.8+Math.random()*3,  user:'pi' },
+      { name:'node',         pid:2156, cpu:1.5+Math.random()*3,  mem:2.4+Math.random()*1.5,user:'pi' },
+      { name:'python3',      pid:3102, cpu:0.8+Math.random()*2,  mem:1.9+Math.random()*1,  user:'pi' },
+      { name:'Xorg',         pid:892,  cpu:0.5+Math.random()*1,  mem:1.2+Math.random()*0.8,user:'root' },
+      { name:'systemd',      pid:1,    cpu:0.2+Math.random()*0.3,mem:0.8+Math.random()*0.3,user:'root' },
+      { name:'sshd',         pid:567,  cpu:0.1,                  mem:0.3,                  user:'root' },
+      { name:'cua-driver',   pid:4201, cpu:0.3+Math.random()*0.5,mem:0.6+Math.random()*0.2,user:'pi' },
+    ];
+    procs.sort((a,b) => b.cpu - a.cpu);
+    return { cpuPct, memTotal, memUsed, memCache, memAvail, memSwap, memPct,
+             diskTotal, diskUsed, diskPct, netDown, netUp, netRx, netTx,
+             cpuFreq, cpuLoad, cpuTemp, gpuTemp, pmicTemp, ambient, uptime, procs };
+  }
+
+  // ── Communication Log Data ────────────────────
+  function getCommLog() {
+    // Prefer rich thinking log if available
+    if (window.__DASHBOARD_THINKING__ && window.__DASHBOARD_THINKING__.length > 0) {
+      return window.__DASHBOARD_THINKING__;
+    }
+    // Fallback to DB-backed real-time data
+    if (window.__DASHBOARD_COMM__ && window.__DASHBOARD_COMM__.length > 0) {
+      return window.__DASHBOARD_COMM__;
+    }
+    return [
+      { platform: 'weixin', avatar: '微', role: 'user',
+        label: 'WeChat', time: '--:--',
+        text: '等待数据加载…' },
+    ];
+  }
+
+  function getLiepinAutomation() {
+    return window.__LIEPIN_AUTOMATION__ || {
+      running: false,
+      phase: '未运行',
+      target: 30,
+      collected: 0,
+      processed: 0,
+      success: 0,
+      failed: 0,
+      skipped: 0,
+      lastLog: '暂无投递记录。使用 /shell /home/pi/lp 30 启动。',
+      updatedAt: '--',
+    };
+  }
+
+  function getWorldNews() {
+    if (window.__WORLD_NEWS__ && Array.isArray(window.__WORLD_NEWS__.items)) {
+      return window.__WORLD_NEWS__;
+    }
+    return {
+      updatedAt: '--',
+      items: [
+        { rank: 1, title: '世界杯 16 强继续进行，巴西、英格兰与墨西哥成为今日焦点。', source: 'Local', published: '--:--' },
+        { rank: 2, title: '欧洲热浪持续，多国讨论城市降温、医疗与能源韧性。', source: 'Local', published: '--:--' },
+        { rank: 3, title: '美国 250 周年庆典进入高峰，历史叙事与政治分歧受关注。', source: 'Local', published: '--:--' },
+        { rank: 4, title: '中东紧张局势延续，伊朗高规格葬礼与地区安全成为焦点。', source: 'Local', published: '--:--' },
+        { rank: 5, title: '无人机与反无人机能力成为欧洲防务讨论核心。', source: 'Local', published: '--:--' },
+        { rank: 6, title: '北美高温影响大型活动，世界杯赛程与公共安全面临压力。', source: 'Local', published: '--:--' },
+        { rank: 7, title: '法国、摩洛哥率先晋级，世界杯八强席位逐步明朗。', source: 'Local', published: '--:--' },
+        { rank: 8, title: 'FIFA 撤销 Balogun 红牌，美国队淘汰赛阵容压力缓解。', source: 'Local', published: '--:--' },
+        { rank: 9, title: '全球市场继续关注美国政策、能源价格与科技投资走向。', source: 'Local', published: '--:--' },
+        { rank: 10, title: '国际媒体加码美国报道，围绕大选周期与周年庆扩大布局。', source: 'Local', published: '--:--' },
+      ],
+    };
+  }
+
+  function reloadLiepinAutomation(callback) {
+    const old = document.getElementById('liepinAutomationStateScript');
+    if (old) old.remove();
+    const script = document.createElement('script');
+    script.id = 'liepinAutomationStateScript';
+    script.src = 'file:///tmp/liepin-dashboard.js?t=' + Date.now();
+    script.onload = callback;
+    script.onerror = callback;
+    document.head.appendChild(script);
+  }
+
+  function reloadWorldNews(callback) {
+    const old = document.getElementById('worldNewsStateScript');
+    if (old) old.remove();
+    const script = document.createElement('script');
+    script.id = 'worldNewsStateScript';
+    script.src = 'file:///tmp/world-news-dashboard.js?t=' + Date.now();
+    script.onload = callback;
+    script.onerror = callback;
+    document.head.appendChild(script);
+  }
+
+  async function callLiepinControl(path, payload = {}) {
+    const res = await fetch('http://127.0.0.1:8787' + path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.ok === false) {
+      throw new Error(data.error || 'request_failed');
+    }
+    return data;
+  }
+
+  function setLiepinControlBusy(busy) {
+    const start = $('#liepinStartButton');
+    const stop = $('#liepinStopButton');
+    const schedule = $('#liepinScheduleButton');
+    const cancel = $('#liepinCancelScheduleButton');
+    if (start) start.disabled = busy;
+    if (stop) stop.disabled = busy;
+    if (schedule) schedule.disabled = busy;
+    if (cancel) cancel.disabled = busy;
+  }
+
+  function setLiepinControlMessage(message) {
+    window.__LIEPIN_AUTOMATION__ = {
+      ...(window.__LIEPIN_AUTOMATION__ || {}),
+      lastLog: message,
+      updatedAt: new Date().toLocaleTimeString('zh-CN', { hour12: false }),
+    };
+    render();
+  }
+
+  function selectedLiepinDays() {
+    return Array.from(document.querySelectorAll('#liepinScheduleDays input:checked'))
+      .map((item) => parseInt(item.value, 10))
+      .filter((item) => Number.isInteger(item));
+  }
+
+  function updateLiepinDayInputs() {
+    const mode = $('#liepinScheduleMode');
+    const disabled = !mode || mode.value !== 'custom';
+    document.querySelectorAll('#liepinScheduleDays input').forEach((input) => {
+      input.disabled = disabled;
+    });
+  }
+
+  // ── Render ────────────────────────────────────
+  function render() {
+    const d = getSimulatedData();
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('zh-CN', { hour12: false });
+
+    // Header
+    setText('#headerTime', timeStr);
+    setText('#footerTime', now.toLocaleString('zh-CN', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }));
+    const worldNews = getWorldNews();
+    const worldNewsList = $('#worldNewsList');
+    if (worldNewsList) {
+      worldNewsList.innerHTML = worldNews.items.slice(0, 10).map((item, index) => `
+        <div class="news-item">
+          <span class="news-rank">${item.rank || index + 1}</span>
+          <span>${escapeHtml(item.title)}<br><span class="automation-sub">${escapeHtml(item.source || '--')} · ${escapeHtml(item.published || worldNews.updatedAt || '--')}</span></span>
+        </div>
+      `).join('');
+    }
+
+    // Stat cards
+    setText('#statCpu', d.cpuPct.toFixed(1) + '%');
+    setText('#statMem', fmtBytes(d.memUsed * 1024 * 1024));
+    setText('#statDisk', d.diskPct.toFixed(1) + '%');
+    setText('#statDiskSub', '已用 ' + fmtBytes(d.diskUsed * 1024 * 1024) + ' / 64 GB');
+    setText('#statNet', d.netDown.toFixed(0) + ' KB/s');
+    setText('#statNetSub', '↑ ' + d.netUp.toFixed(0) + ' KB/s');
+
+    // CPU ring
+    setRing('#cpuRing', d.cpuPct);
+    setText('#cpuPct', d.cpuPct.toFixed(0));
+    setText('#cpuFreq', d.cpuFreq + ' GHz');
+    setText('#cpuTemp', d.cpuTemp.toFixed(0) + '°C');
+    setText('#cpuLoad', d.cpuLoad);
+    const cpuBadge = $('#cpuBadge');
+    if (d.cpuPct > 70) { cpuBadge.textContent = '高负载'; cpuBadge.style.background='var(--red-soft)'; cpuBadge.style.color='var(--red)'; }
+    else if (d.cpuPct > 40) { cpuBadge.textContent = '中等'; cpuBadge.style.background='var(--orange-soft)'; cpuBadge.style.color='var(--orange)'; }
+    else { cpuBadge.textContent='正常'; cpuBadge.style.background='var(--green-soft)'; cpuBadge.style.color='var(--green)'; }
+
+    // Memory ring
+    setRing('#memRing', d.memPct);
+    setText('#memPct', d.memPct.toFixed(0));
+    setText('#memUsed', fmtBytes(d.memUsed * 1024 * 1024));
+    setText('#memAvail', fmtBytes(d.memAvail * 1024 * 1024));
+    setText('#memCache', fmtBytes(d.memCache * 1024 * 1024));
+    setText('#memSwap', fmtBytes(d.memSwap * 1024 * 1024));
+
+    // Disk bars
+    const diskBars = $('#diskBars');
+    const partitions = [
+      { name: 'root (/)',  used: d.diskUsed,                     total: d.diskTotal, cls:'accent' },
+      { name: 'boot',      used: 256,                            total: 512,          cls:'purple' },
+      { name: 'home (/home)', used: d.diskUsed * 0.3,            total: d.diskTotal * 0.35, cls:'green' },
+      { name: 'tmp',       used: 80 + Math.random() * 30,        total: 512,          cls:'orange' },
+    ];
+    diskBars.innerHTML = partitions.map(p => {
+      const pct = Math.min((p.used/p.total)*100, 100);
+      return `<div class="bar-item">
+        <div class="bar-label-row"><span class="bar-name">${p.name}</span><span class="bar-value">${fmtBytes(p.used*1024*1024)} / ${fmtBytes(p.total*1024*1024)}</span></div>
+        <div class="bar-track"><div class="bar-fill ${p.cls}" style="width:${pct}%"></div></div>
+      </div>`;
+    }).join('');
+
+    // Network
+    setText('#netDown', d.netDown.toFixed(0));
+    setText('#netUp', d.netUp.toFixed(0));
+    setText('#netRxTotal', d.netRx.toFixed(1));
+    setText('#netTxTotal', d.netTx.toFixed(1));
+
+    // Processes
+    const procBody = $('#processBody');
+    procBody.innerHTML = d.procs.map(p =>
+      `<tr>
+        <td class="process-name">${p.name}</td>
+        <td class="process-pid">${p.pid}</td>
+        <td class="process-cpu" style="color:${p.cpu>5?'var(--orange)':p.cpu>2?'var(--accent)':'var(--text-primary)'}">${p.cpu.toFixed(1)}%</td>
+        <td class="process-mem">${p.mem.toFixed(1)}%</td>
+        <td style="font-size:0.76rem;color:var(--text-tertiary);">${p.user}</td>
+      </tr>`
+    ).join('');
+    setText('#procCount', d.procs.length + ' 进程');
+
+    // System info
+    setText('#sysKernel', '6.18.34+rpt-rpi-2712');
+    setText('#sysUptime', fmtUptime(d.uptime));
+    setText('#sysProcs', (178 + Math.floor(Math.random()*10)).toString());
+
+    // Temperature
+    setText('#tempCpu', d.cpuTemp.toFixed(0) + '°C');
+    setText('#tempGpu', d.gpuTemp.toFixed(0) + '°C');
+    setText('#tempPmic', d.pmicTemp.toFixed(0) + '°C');
+    setText('#tempAmbient', d.ambient.toFixed(0) + '°C');
+
+    // Temp indicator colors
+    document.querySelectorAll('.temp-indicator').forEach(el => {
+      const valText = el.parentElement.querySelector('.temp-value').textContent;
+      const val = parseFloat(valText);
+      el.className = 'temp-indicator';
+      if (val > 55) el.classList.add('hot');
+      else if (val > 42) el.classList.add('warm');
+      else el.classList.add('cool');
+    });
+
+    // Communication log
+    const commLog = $('#commLog');
+    const comms = getCommLog();
+    commLog.innerHTML = comms.map(c => `
+      <div class="comm-entry">
+        <span class="comm-dot ${c.role}"></span>
+        <div class="comm-avatar ${c.platform}">${c.avatar}</div>
+        <div class="comm-body">
+          <div class="comm-meta">
+            <span class="comm-platform">${c.label}</span>
+            <span class="comm-time">${c.time}</span>
+          </div>
+          <div class="comm-text">${c.text}</div>
+          ${c.thinking ? `<div class="comm-thinking">${c.thinking}</div>` : ''}
+        </div>
+      </div>
+    `).join('');
+    setText('#commCount', comms.length + ' 条');
+
+    // Liepin automation
+    const liepin = getLiepinAutomation();
+    const liepinStatus = $('#liepinStatus');
+    if (liepinStatus) {
+      liepinStatus.textContent = liepin.running ? '运行中' : (liepin.phase || '未运行');
+      if (liepin.running) {
+        liepinStatus.style.background = 'var(--green-soft)';
+        liepinStatus.style.color = 'var(--green)';
+      } else if ((liepin.failed || 0) > 0) {
+        liepinStatus.style.background = 'var(--orange-soft)';
+        liepinStatus.style.color = 'var(--orange)';
+      } else {
+        liepinStatus.style.background = 'var(--accent-soft)';
+        liepinStatus.style.color = 'var(--accent)';
+      }
+    }
+    setText('#liepinTarget', String(liepin.target ?? '--'));
+    setText('#liepinProcessed', String(liepin.processed ?? '--'));
+    setText('#liepinCollected', '已采集 ' + String(liepin.collected ?? '--'));
+    setText('#liepinSuccess', String(liepin.success ?? '--'));
+    setText('#liepinFailed', String(liepin.failed ?? '--'));
+    setText('#liepinSkipped', '跳过 ' + String(liepin.skipped ?? '--'));
+    setText('#liepinLog', liepin.lastLog || '暂无投递记录。');
+    setText(
+      '#liepinUpdated',
+      liepin.scheduledAt
+        ? `定时 ${liepin.scheduledAt} · ${liepin.scheduledLimit || '--'} 个`
+        : (liepin.updatedAt ? '更新 ' + liepin.updatedAt : '--')
+    );
+  }
+
+  // ── Init ──────────────────────────────────────
+  updateLiepinDayInputs();
+  const scheduleMode = $('#liepinScheduleMode');
+  if (scheduleMode) scheduleMode.addEventListener('change', updateLiepinDayInputs);
+  function refreshExternalState() {
+    reloadWorldNews(() => reloadLiepinAutomation(render));
+  }
+  refreshExternalState();
+  setInterval(refreshExternalState, 2000);
+
+  const startButton = $('#liepinStartButton');
+  const stopButton = $('#liepinStopButton');
+  const scheduleButton = $('#liepinScheduleButton');
+  const cancelScheduleButton = $('#liepinCancelScheduleButton');
+  if (startButton) {
+    startButton.addEventListener('click', async () => {
+      const input = $('#liepinLimitInput');
+      const limit = Math.max(1, parseInt(input && input.value ? input.value : '30', 10) || 30);
+      setLiepinControlBusy(true);
+      setLiepinControlMessage(`正在请求启动猎聘自动投递，数量 ${limit}。`);
+      try {
+        await callLiepinControl('/start', { limit });
+        setLiepinControlMessage(`已请求启动猎聘自动投递，数量 ${limit}。`);
+      } catch (err) {
+        setLiepinControlMessage(`启动失败：${err.message}`);
+      } finally {
+        setLiepinControlBusy(false);
+      }
+    });
+  }
+  if (stopButton) {
+    stopButton.addEventListener('click', async () => {
+      setLiepinControlBusy(true);
+      setLiepinControlMessage('正在请求停止猎聘自动投递。');
+      try {
+        await callLiepinControl('/stop');
+        setLiepinControlMessage('已请求停止猎聘自动投递。');
+      } catch (err) {
+        setLiepinControlMessage(`停止失败：${err.message}`);
+      } finally {
+        setLiepinControlBusy(false);
+      }
+    });
+  }
+  if (scheduleButton) {
+    scheduleButton.addEventListener('click', async () => {
+      const input = $('#liepinLimitInput');
+      const modeEl = $('#liepinScheduleMode');
+      const timeEl = $('#liepinScheduleTime');
+      const limit = Math.max(1, parseInt(input && input.value ? input.value : '30', 10) || 30);
+      const mode = modeEl && modeEl.value ? modeEl.value : 'daily';
+      const runTime = timeEl && timeEl.value ? timeEl.value : '';
+      const days = selectedLiepinDays();
+      if (!runTime) {
+        setLiepinControlMessage('定时启动失败：请选择时间。');
+        return;
+      }
+      if (mode === 'custom' && days.length === 0) {
+        setLiepinControlMessage('定时启动失败：自选周几至少选择一天。');
+        return;
+      }
+      setLiepinControlBusy(true);
+      setLiepinControlMessage(`正在设置循环定时：${runTime}，数量 ${limit}。`);
+      try {
+        await callLiepinControl('/schedule', { limit, mode, time: runTime, days });
+        setLiepinControlMessage(`已设置循环定时：${runTime}，数量 ${limit}。`);
+      } catch (err) {
+        setLiepinControlMessage(`定时启动失败：${err.message}`);
+      } finally {
+        setLiepinControlBusy(false);
+      }
+    });
+  }
+  if (cancelScheduleButton) {
+    cancelScheduleButton.addEventListener('click', async () => {
+      setLiepinControlBusy(true);
+      setLiepinControlMessage('正在取消定时任务。');
+      try {
+        await callLiepinControl('/cancel-schedule');
+        setLiepinControlMessage('已取消定时任务。');
+      } catch (err) {
+        setLiepinControlMessage(`取消定时失败：${err.message}`);
+      } finally {
+        setLiepinControlBusy(false);
+      }
+    });
+  }
+
+  // Auto-request fullscreen (belt-and-suspenders with --kiosk)
+  function requestFullscreen() {
+    const el = document.documentElement;
+    if (el.requestFullscreen) {
+      el.requestFullscreen().catch(() => {});
+    } else if (el.webkitRequestFullscreen) {
+      el.webkitRequestFullscreen();
+    }
+  }
+  // Try on load, and on any click/touch (for browsers that require gesture)
+  window.addEventListener('load', () => setTimeout(requestFullscreen, 500));
+  document.addEventListener('click', requestFullscreen, { once: true });
+  document.addEventListener('touchstart', requestFullscreen, { once: true });
+})();
+</script>
+</body>
+</html>
