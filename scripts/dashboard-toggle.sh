@@ -12,8 +12,12 @@ if ! pgrep -f "/home/pi/zhaopin-automation/liepin_dashboard_server.py" >/dev/nul
         >/tmp/liepin-dashboard-server.log 2>&1 &
 fi
 if ! pgrep -f "/home/pi/dashboard-news-fetcher.py --loop" >/dev/null 2>&1; then
-    nohup python3 /home/pi/dashboard-news-fetcher.py --loop --interval 600 --region china \
+    nohup python3 /home/pi/dashboard-news-fetcher.py --loop --interval 600 \
         >/tmp/dashboard-news-fetcher.log 2>&1 &
+fi
+if ! pgrep -f "/home/pi/dashboard-worldcup-fetcher.py --loop" >/dev/null 2>&1; then
+    nohup python3 /home/pi/dashboard-worldcup-fetcher.py --loop --interval 60 \
+        >/tmp/dashboard-worldcup-fetcher.log 2>&1 &
 fi
 
 # Check if dashboard chromium is running (match actual chromium binary, not grep)

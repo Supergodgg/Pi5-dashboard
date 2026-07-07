@@ -13,6 +13,7 @@
 <script src="file:///tmp/dashboard-thinking.js"></script>
 <script src="file:///tmp/liepin-dashboard.js"></script>
 <script src="file:///tmp/world-news-dashboard.js"></script>
+<script src="file:///tmp/worldcup-dashboard.js"></script>
 <style>
 /* ============================================
    CSS Variables — Light Theme Token Map
@@ -791,22 +792,10 @@ body::before {
       <span class="header-time" id="headerTime">--</span>
     </div>
     <div class="match-ticker">
-      <div class="match-track">
+      <div class="match-track" id="worldcupMatchTrack">
         <div class="match-row">
-          <span class="match-teams">巴西 vs 挪威</span>
-          <span class="match-meta">22:00 CEST · MetLife</span>
-        </div>
-        <div class="match-row">
-          <span class="match-teams">墨西哥 vs 英格兰</span>
-          <span class="match-meta">02:00 CEST · Azteca</span>
-        </div>
-        <div class="match-row">
-          <span class="match-teams">巴西 vs 挪威</span>
-          <span class="match-meta">22:00 CEST · MetLife</span>
-        </div>
-        <div class="match-row">
-          <span class="match-teams">墨西哥 vs 英格兰</span>
-          <span class="match-meta">02:00 CEST · Azteca</span>
+          <span class="match-teams">等待世界杯赛程更新</span>
+          <span class="match-meta">暂无实时数据</span>
         </div>
       </div>
     </div>
@@ -1259,6 +1248,19 @@ body::before {
     };
   }
 
+  function getWorldCup() {
+    if (window.__WORLDCUP__ && Array.isArray(window.__WORLDCUP__.matches)) {
+      return window.__WORLDCUP__;
+    }
+    return {
+      updatedAt: '--',
+      source: 'Local',
+      matches: [
+        { teams: '等待世界杯赛程更新', meta: '暂无近三天实时数据', state: 'pre' },
+      ],
+    };
+  }
+
   function reloadLiepinAutomation(callback) {
     const old = document.getElementById('liepinAutomationStateScript');
     if (old) old.remove();
@@ -1276,6 +1278,17 @@ body::before {
     const script = document.createElement('script');
     script.id = 'worldNewsStateScript';
     script.src = 'file:///tmp/world-news-dashboard.js?t=' + Date.now();
+    script.onload = callback;
+    script.onerror = callback;
+    document.head.appendChild(script);
+  }
+
+  function reloadWorldCup(callback) {
+    const old = document.getElementById('worldCupStateScript');
+    if (old) old.remove();
+    const script = document.createElement('script');
+    script.id = 'worldCupStateScript';
+    script.src = 'file:///tmp/worldcup-dashboard.js?t=' + Date.now();
     script.onload = callback;
     script.onerror = callback;
     document.head.appendChild(script);
@@ -1346,6 +1359,18 @@ body::before {
           <span>${escapeHtml(item.title)}<br><span class="automation-sub">${escapeHtml(item.source || '--')} · ${escapeHtml(item.published || worldNews.updatedAt || '--')}</span></span>
         </div>
       `).join('');
+    }
+    const worldCup = getWorldCup();
+    const matchTrack = $('#worldcupMatchTrack');
+    if (matchTrack) {
+      const matches = worldCup.matches.length ? worldCup.matches : [{ teams: '等待世界杯赛程更新', meta: '暂无近三天实时数据' }];
+      const rows = [...matches, ...matches].map((match) => `
+        <div class="match-row">
+          <span class="match-teams">${escapeHtml(match.teams)}</span>
+          <span class="match-meta">${escapeHtml(match.meta || worldCup.updatedAt || '--')}</span>
+        </div>
+      `).join('');
+      matchTrack.innerHTML = rows;
     }
 
     // Stat cards
@@ -1486,7 +1511,7 @@ body::before {
   const scheduleMode = $('#liepinScheduleMode');
   if (scheduleMode) scheduleMode.addEventListener('change', updateLiepinDayInputs);
   function refreshExternalState() {
-    reloadWorldNews(() => reloadLiepinAutomation(render));
+    reloadWorldNews(() => reloadWorldCup(() => reloadLiepinAutomation(render)));
   }
   refreshExternalState();
   setInterval(refreshExternalState, 2000);

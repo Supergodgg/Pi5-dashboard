@@ -1,26 +1,16 @@
 #!/usr/bin/env python3
 import argparse
-import email.utils
 import html
 import json
 import re
 import time
-import urllib.error
 import urllib.request
-import xml.etree.ElementTree as ET
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 
 
 OUT = Path("/tmp/world-news-dashboard.js")
 CACHE = Path("/tmp/world-news-dashboard-cache.json")
-
-SOURCES = [
-    {"name": "BBC", "url": "https://feeds.bbci.co.uk/news/world/rss.xml", "weight": 100},
-    {"name": "Guardian", "url": "https://www.theguardian.com/world/rss", "weight": 90},
-    {"name": "Al Jazeera", "url": "https://www.aljazeera.com/xml/rss/all.xml", "weight": 86},
-    {"name": "NPR", "url": "https://feeds.npr.org/1004/rss.xml", "weight": 78},
-]
 
 CHINA_HOT_SOURCES = [
     {"name": "百度热搜", "url": "https://top.baidu.com/board?tab=realtime", "weight": 120},
@@ -33,45 +23,6 @@ def clean_text(value):
     value = re.sub(r"<[^>]+>", "", value)
     value = re.sub(r"\s+", " ", value).strip()
     return value
-
-
-def parse_date(value):
-    if not value:
-        return 0
-    try:
-        parsed = email.utils.parsedate_to_datetime(value)
-        if parsed.tzinfo is None:
-            parsed = parsed.replace(tzinfo=timezone.utc)
-        return parsed.timestamp()
-    except Exception:
-        return 0
-
-
-def fetch_source(source, timeout=10):
-    request = urllib.request.Request(
-        source["url"],
-        headers={"User-Agent": "Mozilla/5.0 dashboard-news-fetcher"},
-    )
-    with urllib.request.urlopen(request, timeout=timeout) as response:
-        data = response.read()
-    root = ET.fromstring(data)
-    items = []
-    for item in root.findall(".//item")[:20]:
-        title = clean_text(item.findtext("title"))
-        link = clean_text(item.findtext("link"))
-        published_raw = clean_text(item.findtext("pubDate"))
-        published_ts = parse_date(published_raw)
-        if not title:
-            continue
-        items.append({
-            "title": title,
-            "source": source["name"],
-            "link": link,
-            "publishedTs": published_ts,
-            "published": format_time(published_ts),
-            "weight": source["weight"],
-        })
-    return items
 
 
 def fetch_html(url, timeout=10):
@@ -155,25 +106,8 @@ def score(item):
     return item.get("weight", 0) + recency
 
 
-def format_time(timestamp):
-    if not timestamp:
-        return "--:--"
-    return datetime.fromtimestamp(timestamp).astimezone().strftime("%H:%M")
-
-
-def collect_news(limit=10, region="china"):
-    all_items = []
-    errors = []
-    if region in ("china", "mixed"):
-        china_items, china_errors = fetch_china_hot()
-        all_items.extend(china_items)
-        errors.extend(china_errors)
-    if region in ("world", "mixed") or len(all_items) < limit:
-        for source in SOURCES:
-            try:
-                all_items.extend(fetch_source(source))
-            except Exception as exc:
-                errors.append(f"{source['name']}: {exc}")
+def collect_news(limit=10):
+    all_items, errors = fetch_china_hot()
 
     seen = set()
     deduped = []
@@ -189,7 +123,10 @@ def collect_news(limit=10, region="china"):
 
     if not deduped and CACHE.exists():
         try:
-            return json.loads(CACHE.read_text(encoding="utf-8"))
+            cached = json.loads(CACHE.read_text(encoding="utf-8"))
+            allowed_sources = {source["name"] for source in CHINA_HOT_SOURCES}
+            if all(item.get("source") in allowed_sources for item in cached.get("items", [])):
+                return cached
         except Exception:
             pass
 
@@ -212,21 +149,20 @@ def write_dashboard_js(payload):
     )
 
 
-def run_once(region="china"):
-    payload = collect_news(region=region)
+def run_once():
+    payload = collect_news()
     write_dashboard_js(payload)
     return payload
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Fetch world news RSS feeds for the dashboard.")
+    parser = argparse.ArgumentParser(description="Fetch China hot news feeds for the dashboard.")
     parser.add_argument("--loop", action="store_true")
     parser.add_argument("--interval", type=int, default=600)
-    parser.add_argument("--region", choices=["china", "world", "mixed"], default="china")
     args = parser.parse_args()
 
     while True:
-        run_once(region=args.region)
+        run_once()
         if not args.loop:
             return 0
         time.sleep(max(60, args.interval))
